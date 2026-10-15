@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="꼬마전구 직렬·병렬 밝기 차이를 물길 비유로 이해하는 시뮬레이션">
+<title>꼬마전구 직렬·병렬 실험실</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: 물길 실험장 — 비유 짝짓기 카드 → 조작 막대 → 직렬·병렬 물길 두 장면(폰에서는 위아래) → 쉬운 원리 설명 */
+:root{
+  --bg:#ECF0F2; --surface:#F9FBFC; --tint:#E1E8EC; --ink:#16222C; --muted:#586874; --line:#C7D1D8;
+  --water:#2A7CCF; --foam:#EAF5FF; --stone:#9AA5AF; --gate:#3C4752; --closed:#C2462B; --wood:#8A5A35;
+  --ser:#C2462B; --par:#0B7C83; --glow:#FFB000; --glass:#DCE2E7; --filament:#5A4A3C; --sky:#E4EDF2;
+  --f-display:"Hahmlet","Noto Serif KR",Georgia,serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F151A; --surface:#17212A; --tint:#1E2A34; --ink:#E5ECF1; --muted:#94A3AF; --line:#2B3843;
+  --water:#4F9BEA; --foam:#D6EAFF; --stone:#55616E; --gate:#A3AFBB; --closed:#F07F5E; --wood:#C08B5F;
+  --ser:#F07F5E; --par:#3DC3C8; --glow:#FFC23D; --glass:#2A333E; --filament:#A8957F; --sky:#141D25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F151A; --surface:#17212A; --tint:#1E2A34; --ink:#E5ECF1; --muted:#94A3AF; --line:#2B3843;
+  --water:#4F9BEA; --foam:#D6EAFF; --stone:#55616E; --gate:#A3AFBB; --closed:#F07F5E; --wood:#C08B5F;
+  --ser:#F07F5E; --par:#3DC3C8; --glow:#FFC23D; --glass:#2A333E; --filament:#A8957F; --sky:#141D25; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:26px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:clamp(1.6rem,4.6vw,2.5rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(1.25rem,3.2vw,1.7rem);font-weight:700}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+b{font-weight:600}
+.eyebrow{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em;margin-bottom:8px}
+.lede{max-width:62ch;color:var(--muted);margin-top:12px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* analogy cards */
+.pairs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.pair{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:6px;align-content:start;min-width:0}
+.pair svg{width:64px;height:46px;display:block}
+.pair .w{font-weight:600;font-size:14.5px}
+.pair .e{font-size:13px;color:var(--muted)}
+.pair .e b{color:var(--ink)}
+.i-water{fill:var(--water);opacity:.85} .i-wline{stroke:var(--water);fill:none}
+.i-ink{stroke:var(--ink);fill:none} .i-fill{fill:var(--gate)} .i-wood{stroke:var(--wood);fill:none}
+.i-glow{fill:var(--glow)} .i-stone{stroke:var(--stone);fill:none}
+
+.laws{display:grid;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.law{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.law .lw{font-weight:600}
+.law .le{font-family:var(--f-mono);font-size:14px;color:var(--muted)}
+.law .eq{color:var(--muted)}
+.laws .now{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+@media (max-width:560px){.law{grid-template-columns:1fr}.law .eq{display:none}.law .le::before{content:"전기로: "}}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.ctl{display:grid;gap:6px}
+.ctl-label{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap;color:var(--ink)}
+.seg label small{font-family:var(--f-mono);font-size:11.5px;opacity:.75;margin-left:3px}
+.seg input:checked+label{background:var(--ink);color:var(--surface)}
+.seg input:focus-visible+label{outline:2px solid var(--water);outline-offset:1px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-size:14px;font-weight:500;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{flex:none;display:inline-block}
+.sw.th{width:18px;height:6px;border-radius:3px;background:var(--water)}
+.sw.dot{width:7px;height:7px;border-radius:50%;background:var(--water);box-shadow:0 0 0 2px var(--foam)}
+.sw.g{width:10px;height:10px;border-radius:50%;background:var(--glow);box-shadow:0 0 6px var(--glow)}
+.sw.gate{width:5px;height:14px;background:var(--gate);border-radius:1px}
+
+/* bench */
+.bench{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:780px){.bench{grid-template-columns:1fr 1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0;align-content:start}
+.panel-head{display:grid;gap:2px}
+.panel-head .t{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.chip{font-family:var(--f-display);font-weight:700;font-size:1.25rem;color:var(--k)}
+.panel-head small{color:var(--muted);font-size:13px}
+.panel.series{--k:var(--ser)} .panel.parallel{--k:var(--par)}
+canvas{display:block;width:100%;max-width:100%;touch-action:manipulation;aspect-ratio:10/8.6;border-radius:10px;background:var(--sky)}
+.status{font-size:14px;min-height:2.6em;padding:8px 12px;border-radius:8px;background:var(--tint)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin:0}
+.stat{display:grid;gap:1px;min-width:0;align-content:start}
+.stat dt{font-size:12.5px;color:var(--muted)}
+.stat dt i{font-style:normal;color:var(--ink);font-weight:600}
+.stat dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:1.3rem;font-weight:600}
+.stat .note{font-size:11.5px;color:var(--muted)}
+.meter{height:6px;border-radius:3px;background:var(--tint);overflow:hidden;margin-top:3px}
+.meter i{display:block;height:100%;width:0;background:var(--glow);transition:width .3s}
+
+/* why */
+.why{display:grid;gap:22px;padding-top:6px;border-top:1px solid var(--line)}
+.why-grid{display:grid;gap:22px}
+@media (min-width:860px){.why-grid{grid-template-columns:1.15fr .85fr;align-items:start}}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:18px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:2.2rem 1fr;gap:4px 10px;counter-increment:s;min-width:0}
+.steps li::before{content:counter(s);grid-row:span 2;font-family:var(--f-display);font-weight:700;font-size:1.5rem;line-height:1.1;color:var(--muted)}
+.steps p{max-width:62ch}
+.steps .ser{color:var(--ser)} .steps .par{color:var(--par)}
+.n1note{font-size:13px;color:var(--muted)}
+.side{display:grid;gap:18px;min-width:0}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:8px;min-width:0}
+.box h3{font-size:1rem}
+#chart{display:block;width:100%;max-width:100%;height:auto}
+#chart text{font-family:var(--f-body);fill:var(--muted);font-size:11px}
+#chart .val{font-family:var(--f-mono);font-size:10.5px;fill:var(--ink)}
+#chart .axis{stroke:var(--line)}
+#chart .bs{fill:var(--ser)} #chart .bp{fill:var(--par)}
+#chart .dim{opacity:.3}
+.myth{background:var(--tint);border-color:transparent}
+.try{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
+.fine{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){.meter i{transition:none}}
+body{margin:0}
+:root{color-scheme:light}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">꼬마전구 회로를 물길로 바꿔 보기</div>
+    <h1>물길로 이해하는 직렬과 병렬</h1>
+    <p class="lede">전기는 눈에 안 보이지만 물은 보여요. 펌프가 물을 높은 곳으로 올리고, 물이 떨어지면서 물레방아를 돌려 전구를 켠다고 생각해 보세요. 전기 회로와 똑같이 움직입니다.</p>
+  </header>
+
+  <section class="pairs" aria-label="물길과 전기의 짝">
+    <div class="pair">
+      <svg viewBox="0 0 64 46" aria-hidden="true"><rect class="i-water" x="2" y="36" width="60" height="9" rx="2"/><rect class="i-fill" x="9" y="26" width="16" height="13" rx="2"/><path class="i-wline" stroke-width="4" d="M17 26V8h16"/><path class="i-ink" stroke-width="1.6" d="M44 26V8m-5 5 5-5 5 5"/></svg>
+      <span class="w">펌프</span><span class="e">= <b>건전지</b>. 물을 위로 퍼 올려요.</span>
+    </div>
+    <div class="pair">
+      <svg viewBox="0 0 64 46" aria-hidden="true"><rect class="i-water" x="34" y="6" width="26" height="7" rx="1"/><rect class="i-water" x="2" y="36" width="60" height="9" rx="2"/><path class="i-ink" stroke-width="1.6" d="M18 9v24m-4-20 4-4 4 4m-8 16 4 4 4-4M12 9h22"/></svg>
+      <span class="w">물이 올라간 높이</span><span class="e">= <b>전압 (V)</b>. 높을수록 떨어질 때 힘이 세요.</span>
+    </div>
+    <div class="pair">
+      <svg viewBox="0 0 64 46" aria-hidden="true"><path class="i-stone" stroke-width="3" d="M2 30h60"/><path class="i-wline" stroke-width="9" d="M2 23h60"/><circle cx="14" cy="23" r="2" fill="#fff"/><circle cx="30" cy="23" r="2" fill="#fff"/><circle cx="46" cy="23" r="2" fill="#fff"/><path class="i-ink" stroke-width="1.6" d="M40 10h18m-4-4 4 4-4 4"/></svg>
+      <span class="w">1초에 흐르는 물의 양</span><span class="e">= <b>전류 (A)</b>. 물줄기가 굵고 빠를수록 많아요.</span>
+    </div>
+    <div class="pair">
+      <svg viewBox="0 0 64 46" aria-hidden="true"><path class="i-stone" stroke-width="3" d="M2 34h60"/><path class="i-wline" stroke-width="10" d="M2 27h26"/><path class="i-wline" stroke-width="3" d="M28 30h34"/><rect class="i-fill" x="27" y="6" width="5" height="22" rx="1"/></svg>
+      <span class="w">좁은 수문</span><span class="e">= <b>저항 (Ω)</b>. 좁을수록 물이 덜 지나가요.</span>
+    </div>
+    <div class="pair">
+      <svg viewBox="0 0 64 46" aria-hidden="true"><circle class="i-glow" cx="32" cy="9" r="7" opacity=".9"/><path class="i-wood" stroke-width="1.6" d="M32 16v10"/><circle class="i-wood" stroke-width="2" cx="32" cy="32" r="11"/><path class="i-wood" stroke-width="1.4" d="M21 32h22M32 21v22M24 24l16 16M40 24 24 40"/></svg>
+      <span class="w">물레방아의 힘</span><span class="e">= <b>전구 밝기</b>. 물레방아가 셀수록 전구가 밝아요.</span>
+    </div>
+  </section>
+
+  <section class="laws" aria-label="물길 규칙과 전기 공식">
+    <div class="law"><span class="lw">흐르는 물 = 높이 ÷ 수문이 막는 정도</span><span class="eq">⇔</span><span class="le">전류 = 전압 ÷ 저항</span></div>
+    <div class="law"><span class="lw">물레방아 힘 = 떨어지는 높이 × 흐르는 물</span><span class="eq">⇔</span><span class="le">밝기(전력) = 전압 × 전류</span></div>
+    <p class="now" id="now"></p>
+  </section>
+
+  <section class="controls" aria-label="실험 조건">
+    <div class="ctl">
+      <span class="ctl-label" id="lbl-n">물레방아(전구) 개수</span>
+      <div class="seg" role="radiogroup" aria-labelledby="lbl-n">
+        <input type="radio" name="n" id="n1" value="1"><label for="n1">1개</label>
+        <input type="radio" name="n" id="n2" value="2" checked><label for="n2">2개</label>
+        <input type="radio" name="n" id="n3" value="3"><label for="n3">3개</label>
+        <input type="radio" name="n" id="n4" value="4"><label for="n4">4개</label>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="ctl-label" id="lbl-b">펌프 높이 = 건전지 전압</span>
+      <div class="seg" role="radiogroup" aria-labelledby="lbl-b">
+        <input type="radio" name="cells" id="b1" value="1"><label for="b1">낮게<small>1.5V</small></label>
+        <input type="radio" name="cells" id="b2" value="2" checked><label for="b2">보통<small>3V</small></label>
+        <input type="radio" name="cells" id="b3" value="3"><label for="b3">높게<small>4.5V</small></label>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="ctl-label" id="lbl-r">수문 넓이 = 저항</span>
+      <div class="seg" role="radiogroup" aria-labelledby="lbl-r">
+        <input type="radio" name="rk" id="r1" value="1"><label for="r1">넓게<small>5Ω</small></label>
+        <input type="radio" name="rk" id="r2" value="2" checked><label for="r2">보통<small>10Ω</small></label>
+        <input type="radio" name="rk" id="r3" value="3"><label for="r3">좁게<small>20Ω</small></label>
+      </div>
+    </div>
+    <div class="btns">
+      <button type="button" class="btn" id="pause">멈춤</button>
+      <button type="button" class="btn" id="reset">수문 모두 열기</button>
+    </div>
+  </section>
+
+  <div class="legend" aria-hidden="true">
+    <span><i class="sw th"></i>물줄기 굵기 = 흐르는 물의 양(전류)</span>
+    <span><i class="sw dot"></i>움직이는 물방울 · 빠를수록 많이 흐름</span>
+    <span><i class="sw gate"></i>수문(저항) · 누르면 닫힘</span>
+    <span><i class="sw g"></i>불빛 = 물레방아 힘(밝기)</span>
+  </div>
+
+  <section class="bench">
+    <article class="panel series">
+      <div class="panel-head"><div class="t"><span class="chip">직렬</span><small>계단식 폭포 · 물길이 하나</small></div></div>
+      <canvas id="cv-series" role="img" aria-label="직렬 물길 그림. 물레방아나 수문을 누르면 수문이 닫히거나 열립니다."></canvas>
+      <p class="status" id="series-status"></p>
+      <dl class="stats">
+        <div class="stat"><dt>흐르는 물 <i>(전류)</i></dt><dd id="series-I">–</dd><span class="note">펌프가 1초에 보내는 물</span></div>
+        <div class="stat"><dt>물레방아 하나의 낙차 <i>(전압)</i></dt><dd id="series-V">–</dd></div>
+        <div class="stat"><dt>물레방아 힘 <i>(밝기)</i></dt><dd id="series-P">–</dd><div class="meter"><i id="series-M"></i></div><span class="note">기준: 보통 높이·보통 수문·1개 = 100%</span></div>
+        <div class="stat"><dt>펌프가 버티는 시간 <i>(건전지 수명)</i></dt><dd id="series-L">–</dd><span class="note">물레방아 1개일 때 대비</span></div>
+      </dl>
+    </article>
+
+    <article class="panel parallel">
+      <div class="panel-head"><div class="t"><span class="chip">병렬</span><small>여러 물줄기 · 물길이 갈래마다 따로</small></div></div>
+      <canvas id="cv-parallel" role="img" aria-label="병렬 물길 그림. 물레방아나 수문을 누르면 수문이 닫히거나 열립니다."></canvas>
+      <p class="status" id="parallel-status"></p>
+      <dl class="stats">
+        <div class="stat"><dt>흐르는 물 <i>(전류)</i></dt><dd id="parallel-I">–</dd><span class="note">펌프가 1초에 보내는 물</span></div>
+        <div class="stat"><dt>물레방아 하나의 낙차 <i>(전압)</i></dt><dd id="parallel-V">–</dd></div>
+        <div class="stat"><dt>물레방아 힘 <i>(밝기)</i></dt><dd id="parallel-P">–</dd><div class="meter"><i id="parallel-M"></i></div><span class="note">기준: 보통 높이·보통 수문·1개 = 100%</span></div>
+        <div class="stat"><dt>펌프가 버티는 시간 <i>(건전지 수명)</i></dt><dd id="parallel-L">–</dd><span class="note">물레방아 1개일 때 대비</span></div>
+      </dl>
+    </article>
+  </section>
+
+  <section class="why">
+    <h2>왜 직렬은 어둡고 병렬은 밝을까</h2>
+    <div class="why-grid">
+      <div style="display:grid;gap:16px;min-width:0">
+        <p class="n1note" id="n1note" hidden>지금은 물레방아가 1개라 직렬과 병렬이 똑같아요. 아래 설명은 2개 기준이에요.</p>
+        <ol class="steps">
+          <li><h3>펌프는 물을 정해진 높이까지만 올린다</h3>
+            <p>펌프(건전지)는 물을 높이 <span class="mono x-V">3</span>까지 올려요. 물은 바닥으로 돌아오는 동안 이 높이를 전부 내려와야 하고, 물레방아는 물이 떨어지는 만큼만 힘을 받아요.</p></li>
+          <li><h3><span class="ser">직렬</span>은 계단식 폭포</h3>
+            <p>물길이 하나라서 물이 물레방아 <span class="mono x-n">2</span>개를 차례로 지나요. 높이 <span class="mono x-V">3</span>을 <span class="mono x-n">2</span>번에 나눠 떨어지니 한 번의 낙차는 <span class="mono x-Vs">1.5</span>뿐이에요. 게다가 수문을 <span class="mono x-n">2</span>개나 지나야 해서 흐르는 물도 1/<span class="mono x-n">2</span>로 줄어요. 낙차도 작고 물도 적으니 힘은 1/<span class="mono x-n2">4</span>, 즉 <span class="mono x-pct">25</span>%가 돼요.</p></li>
+          <li><h3><span class="par">병렬</span>은 나란히 떨어지는 물줄기</h3>
+            <p>위 물통에서 갈래마다 자기 물줄기로 바닥까지 한 번에 떨어져요. 물레방아마다 높이 <span class="mono x-V">3</span>을 전부 받고, 수문도 하나씩만 지나니 물도 넉넉해요. 그래서 하나만 있을 때와 똑같이 밝아요. 대신 펌프는 물을 <span class="mono x-n">2</span>배 퍼 올려야 해서 <span class="mono x-n">2</span>배 빨리 지쳐요. 건전지가 빨리 닳는 거예요.</p></li>
+        </ol>
+      </div>
+      <div class="side">
+        <div class="box">
+          <h3>물레방아 개수에 따른 하나의 힘</h3>
+          <svg id="chart" viewBox="0 0 320 180" role="img" aria-label="직렬은 개수가 늘수록 1/n제곱으로 약해지고 병렬은 100% 유지"></svg>
+          <p class="fine">물레방아 1개 = 100%. 직렬은 1/n², 병렬은 그대로예요.</p>
+        </div>
+        <div class="box myth">
+          <h3>앞 물레방아가 물을 다 써버려서 뒤가 약한 걸까?</h3>
+          <p>아니에요. 직렬 물길을 보면 물줄기 굵기와 물방울 속도가 처음부터 끝까지 똑같아요. 물레방아를 지나도 물은 줄지 않아요. 물레방아가 가져가는 건 물이 아니라 <b>높이(에너지)</b>예요. 전기도 같아서, 전구는 전류를 없애지 않고 전압만 써요.</p>
+        </div>
+        <div class="box">
+          <h3>직접 해볼 것</h3>
+          <ul class="try">
+            <li>직렬에서 수문 하나를 눌러 닫아 보세요. 물길이 하나뿐이라 전부 멈춰요.</li>
+            <li>병렬에서 하나를 닫아 보세요. 다른 물줄기는 그대로예요. 집 안 콘센트가 병렬인 이유예요.</li>
+            <li>수문을 ‘좁게’로 바꿔 보세요. 물이 덜 흘러 모두 약해져요. 이게 저항이에요.</li>
+            <li>펌프를 ‘높게’로 바꿔 보세요. 낙차가 커지고 물도 더 흘러 훨씬 밝아져요.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+const VC = 1.5, I0 = 0.3, BASE = 50, SP = 20, RSET = { 1: 5, 2: 10, 3: 20 }, PSTD = 9 / 10;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S = { n: 2, cells: 2, rk: 2, paused: reduce, removed: { series: new Set(), parallel: new Set() } };
+
+const C = {};
+const KEYS = ['sky','surface','ink','muted','line','water','foam','stone','gate','closed','wood','glow','glass','filament'];
+function rgb(h){ h = h.replace('#','').trim(); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16) || 0; return [(n>>16)&255,(n>>8)&255,n&255]; }
+function readColors(){ const cs = getComputedStyle(document.documentElement); KEYS.forEach(k => C[k] = cs.getPropertyValue('--' + k).trim()); C.glowRGB = rgb(C.glow); C.filRGB = rgb(C.filament); C.waterRGB = rgb(C.water); }
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const fmt = v => (Math.round(v * 100) / 100).toFixed(2).replace(/\.?0+$/, '');
+const fmtRatio = r => r >= 10 ? r.toFixed(0) : r >= 1 ? String(Math.round(r * 10) / 10) : r.toFixed(2);
+const MONO = '"IBM Plex Mono", ui-monospace, Menlo, monospace';
+const SANS = '"IBM Plex Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif';
+const ww = I => I <= 0 ? 0 : Math.min(16, 2.5 + 5 * Math.sqrt(I / I0));
+
+function solve(kind){
+  const n = S.n, V = S.cells * VC, R = RSET[S.rk], rem = S.removed[kind];
+  const on = [...Array(n).keys()].map(i => !rem.has(i));
+  const m = on.filter(Boolean).length, Iref = V / R;
+  let I = 0, Ib = 0, open = false;
+  const units = [];
+  if (kind === 'series'){
+    if (m < n) open = true; else { I = V / (n * R); Ib = I; }
+    for (let i = 0; i < n; i++) units.push({ on: on[i], V: open ? 0 : I * R, P: open ? 0 : I * I * R });
+  } else {
+    if (m > 0){ Ib = V / R; I = m * Ib; }
+    for (let i = 0; i < n; i++) units.push({ on: on[i], V: on[i] ? V : 0, P: on[i] ? V * V / R : 0 });
+  }
+  units.forEach(u => u.p = u.P / PSTD);
+  return { kind, n, m, V, R, I, Ib, open, units, Iref };
+}
+
+const panels = ['series','parallel'].map(kind => {
+  const cv = document.getElementById('cv-' + kind);
+  return { kind, cv, ctx: cv.getContext('2d'), W: 0, H: 0, g: null, loops: [], sol: null, ang: [0,0,0,0] };
+});
+
+function geom(p){
+  const W = p.W, H = p.H, n = S.n, V = S.cells * VC, ser = p.kind === 'series';
+  const yP = H * 0.84, hMax = H * 0.62, hp = V / 4.5 * hMax, yTop = yP - hp;
+  const xp = Math.max(40, W * 0.12), xs = xp + Math.max(34, W * 0.12);
+  const r = Math.min(18, W * 0.045);
+  const L = W - xs - 2 * r - 16;
+  const units = [];
+  for (let k = 0; k < n; k++){
+    const x = xs + L * (k + 0.55) / (n - 0.45);
+    const yA = ser ? yTop + k * hp / n : yTop, yB = ser ? yTop + (k + 1) * hp / n : yP;
+    const cx = x + r + 3, cy = yB - r * 0.35;
+    units.push({ x, yA, yB, cx, cy, ly: cy - r - 11 });
+  }
+  return { W, H, yP, hMax, hp, yTop, xp, xs, r, units, n };
+}
+
+function mkLoop(pts, rels, rate, offset){
+  const segs = []; let t = 0;
+  for (let k = 0; k < pts.length - 1; k++){
+    const [x0, y0] = pts[k], [x1, y1] = pts[k + 1];
+    const len = Math.hypot(x1 - x0, y1 - y0); if (len < 0.01) continue;
+    const d = len / rels[k];
+    segs.push({ x0, y0, x1, y1, t0: t, t1: t + d }); t += d;
+  }
+  const cnt = Math.max(2, Math.round(t / SP)), dots = [];
+  for (let k = 0; k < cnt; k++) dots.push(offset + k * t / cnt);
+  return { segs, T: t, dots, rate };
+}
+function posOn(L, tau){
+  tau = ((tau % L.T) + L.T) % L.T;
+  for (const s of L.segs){ if (tau <= s.t1){ const f = (tau - s.t0) / (s.t1 - s.t0); return [s.x0 + (s.x1 - s.x0) * f, s.y0 + (s.y1 - s.y0) * f]; } }
+  const s = L.segs[L.segs.length - 1]; return [s.x1, s.y1];
+}
+function buildLoops(p){
+  const g = p.g, sol = p.sol, loops = [], yR = g.yP + 10;
+  const head = [[g.xp, yR], [g.xp, g.yTop - 18], [g.xp + 13, g.yTop - 18], [g.xp + 13, g.yTop]];
+  if (p.kind === 'series'){
+    if (sol.open) return loops;
+    const pts = head.slice();
+    g.units.forEach(u => { pts.push([u.x, u.yA]); pts.push([u.x, u.yB]); });
+    const last = g.units[g.units.length - 1];
+    pts.push([last.x, yR]); pts.push([g.xp, yR]);
+    loops.push(mkLoop(pts, pts.map(() => 1), sol.I, 0));
+  } else {
+    const A = g.units.filter((u, i) => sol.units[i].on), m = A.length;
+    const cnt = x => A.filter(a => a.x >= x - 0.5).length;
+    A.forEach((u, j) => {
+      const pts = head.slice(), rels = [m, m, m];
+      const xs = A.filter(a => a.x < u.x - 0.5).map(a => a.x).sort((a, b) => a - b);
+      for (const xe of [...xs, u.x]){ pts.push([xe, g.yTop]); rels.push(cnt(xe)); }
+      pts.push([u.x, g.yP]); rels.push(1);
+      pts.push([u.x, yR]); rels.push(1);
+      let xa = u.x;
+      for (const xe of [...xs].reverse().concat([g.xp])){ pts.push([xe, yR]); rels.push(cnt(xa)); xa = xe; }
+      loops.push(mkLoop(pts, rels, sol.Ib, j * SP / m));
+    });
+  }
+  return loops;
+}
+
+function rebuild(p){ p.sol = solve(p.kind); if (p.W){ p.g = geom(p); p.loops = buildLoops(p); } }
+function size(p){
+  const d = window.devicePixelRatio || 1;
+  p.W = p.cv.clientWidth; p.H = p.cv.clientHeight;
+  p.cv.width = Math.round(p.W * d); p.cv.height = Math.round(p.H * d); p.ctx.setTransform(d, 0, 0, d, 0, 0);
+  rebuild(p);
+}
+function rr(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function line(ctx, pts, color, w){ ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
+
+function lamp(ctx, x, y, lr, p){
+  const s = Math.sqrt(Math.max(0, Math.min(2.25, p)));
+  const a = Math.min(1, s);
+  if (s > 0.03){
+    const rg = lr * (1.6 + 3 * Math.min(1.5, s));
+    const gr = ctx.createRadialGradient(x, y, lr * 0.3, x, y, rg);
+    gr.addColorStop(0, rgba(C.glowRGB, 0.8 * a)); gr.addColorStop(0.45, rgba(C.glowRGB, 0.3 * a)); gr.addColorStop(1, rgba(C.glowRGB, 0));
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, rg, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(x, y, lr, 0, Math.PI * 2); ctx.fillStyle = C.glass; ctx.fill();
+  if (s > 0.02){ ctx.fillStyle = rgba(C.glowRGB, 0.18 + 0.8 * a); ctx.fill(); }
+  ctx.lineWidth = 1.2; ctx.strokeStyle = C.ink; ctx.globalAlpha = 0.5; ctx.stroke(); ctx.globalAlpha = 1;
+  const hot = [255, 248, 222], col = C.filRGB.map((c, i) => Math.round(c + (hot[i] - c) * Math.min(1, a * 1.1)));
+  ctx.strokeStyle = `rgb(${col.join(',')})`; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(x - lr * 0.45, y + lr * 0.2); ctx.lineTo(x - lr * 0.2, y - lr * 0.25); ctx.lineTo(x, y + lr * 0.15); ctx.lineTo(x + lr * 0.2, y - lr * 0.25); ctx.lineTo(x + lr * 0.45, y + lr * 0.2); ctx.stroke();
+}
+function wheel(ctx, cx, cy, r, ang){
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+  ctx.strokeStyle = C.wood; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1.4; ctx.beginPath();
+  for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9); }
+  ctx.stroke();
+  ctx.fillStyle = C.wood;
+  for (let i = 0; i < 8; i++){ ctx.save(); ctx.rotate(i * Math.PI / 4); ctx.fillRect(r * 0.82, -1.8, r * 0.36, 3.6); ctx.restore(); }
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function draw(p, dt){
+  const { ctx, W, H, g, sol } = p; if (!g) return;
+  ctx.clearRect(0, 0, W, H);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const ser = p.kind === 'series', fs = Math.max(10, Math.min(12, W * 0.03));
+  const R = sol.R, gapFor = on => on ? (R === 5 ? 12 : R === 10 ? 7 : 3.5) : 0;
+
+  // height ruler
+  const rx = 13;
+  ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+  ctx.beginPath(); ctx.moveTo(rx, g.yP); ctx.lineTo(rx, g.yP - g.hMax); ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.font = `500 ${fs - 1}px ${MONO}`; ctx.textAlign = 'left'; ctx.fillStyle = C.muted;
+  [0, 1.5, 3, 4.5].forEach(v => { const y = g.yP - g.hMax * v / 4.5; ctx.beginPath(); ctx.moveTo(rx - 3, y); ctx.lineTo(rx + 3, y); ctx.stroke(); ctx.fillText(fmt(v), rx + 5, y + 4); });
+  ctx.font = `500 ${fs - 1}px ${SANS}`; ctx.fillText('높이(V)', 4, g.yP - g.hMax - 10);
+  ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = C.water; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(rx, g.yTop); ctx.lineTo(g.xp - 10, g.yTop); ctx.stroke(); ctx.restore();
+
+  // pool
+  ctx.fillStyle = rgba(C.waterRGB, 0.3); ctx.fillRect(4, g.yP, W - 8, H - g.yP - 4);
+  line(ctx, [[4, g.yP], [W - 4, g.yP]], rgba(C.waterRGB, 0.7), 1.5);
+
+  // tank
+  const tL = g.xp - 9, tTop = g.yTop - 30;
+  ctx.fillStyle = rgba(C.waterRGB, 0.35); ctx.fillRect(tL, g.yTop - 9, g.xs - tL, 15);
+  line(ctx, [[tL, tTop], [tL, g.yTop + 6], [g.xs, g.yTop + 6]], C.stone, 3);
+
+  // troughs and spouts
+  if (ser){
+    g.units.forEach((u, k) => { const x0 = k === 0 ? g.xs : g.units[k - 1].x; line(ctx, [[x0, u.yA + 6], [u.x + 3, u.yA + 6]], C.stone, 3); });
+  } else {
+    const xl = g.units[g.units.length - 1].x;
+    line(ctx, [[g.xs, g.yTop + 6], [xl + 8, g.yTop + 6]], C.stone, 3);
+    g.units.forEach(u => { line(ctx, [[u.x - 7, g.yTop + 6], [u.x - 7, g.yTop + 20]], C.stone, 2); line(ctx, [[u.x + 7, g.yTop + 6], [u.x + 7, g.yTop + 20]], C.stone, 2); });
+  }
+
+  // pump pipe
+  line(ctx, [[g.xp, g.yP + 4], [g.xp, g.yTop - 18], [g.xp + 13, g.yTop - 18], [g.xp + 13, g.yTop - 10]], C.stone, 9);
+
+  // water streams
+  const wc = rgba(C.waterRGB, 0.88);
+  if (sol.I > 0){
+    line(ctx, [[g.xp, g.yP + 4], [g.xp, g.yTop - 18], [g.xp + 13, g.yTop - 18], [g.xp + 13, g.yTop - 8]], wc, Math.min(6, ww(sol.I)));
+    if (ser){
+      const pts = [[g.xs - 4, g.yTop]];
+      g.units.forEach(u => { pts.push([u.x, u.yA]); pts.push([u.x, u.yB]); });
+      line(ctx, pts, wc, ww(sol.I));
+    } else {
+      const A = g.units.filter((u, i) => sol.units[i].on);
+      let x0 = g.xs - 4;
+      A.forEach((u, j) => { line(ctx, [[x0, g.yTop], [u.x, g.yTop]], wc, ww(sol.Ib * (A.length - j))); x0 = u.x; });
+      A.forEach(u => line(ctx, [[u.x, g.yTop], [u.x, g.yP]], wc, ww(sol.Ib)));
+    }
+  }
+
+  // droplets
+  const dr = Math.max(1.6, W * 0.005);
+  ctx.fillStyle = C.foam;
+  p.loops.forEach(L => {
+    if (!S.paused){ const v = dt * Math.min(240, BASE * L.rate / I0); for (let k = 0; k < L.dots.length; k++) L.dots[k] += v; }
+    L.dots.forEach(t => { const [x, y] = posOn(L, t); ctx.beginPath(); ctx.arc(x, y, dr, 0, Math.PI * 2); ctx.fill(); });
+  });
+
+  // gates, wheels, lamps, labels
+  g.units.forEach((u, i) => {
+    const s = sol.units[i], gap = gapFor(s.on);
+    ctx.fillStyle = s.on ? C.gate : C.closed;
+    if (ser){
+      const gx = u.x - 10, bottom = u.yA + 5;
+      ctx.fillRect(gx - 2.5, u.yA - 18, 5, (bottom - gap) - (u.yA - 18));
+      ctx.fillRect(gx - 6, u.yA - 19, 12, 2.5);
+    } else {
+      const gy = g.yTop + 12;
+      ctx.fillRect(u.x - 11, gy - 2.5, 11 - gap / 2, 5);
+      ctx.fillRect(u.x + gap / 2, gy - 2.5, 11 - gap / 2, 5);
+    }
+    if (!S.paused) p.ang[i] += dt * 4.5 * Math.sqrt(Math.max(0, Math.min(2.25, s.p)));
+    line(ctx, [[u.cx, u.cy], [u.cx, u.ly + g.r * 0.42]], C.wood, 1.5);
+    wheel(ctx, u.cx, u.cy, g.r, p.ang[i]);
+    lamp(ctx, u.cx, u.ly, g.r * 0.42, s.p);
+    ctx.textAlign = 'center';
+    if (s.on){ ctx.fillStyle = C.ink; ctx.font = `500 ${fs - 0.5}px ${MONO}`; ctx.fillText('낙차 ' + fmt(s.V || (ser ? 0 : sol.V)) + 'V', u.cx, u.cy + g.r + fs + 3); }
+    else { ctx.fillStyle = C.closed; ctx.font = `600 ${fs - 0.5}px ${SANS}`; ctx.fillText('수문 닫힘', u.cx, u.cy + g.r + fs + 3); }
+  });
+
+  // pump box
+  ctx.fillStyle = C.gate; rr(ctx, g.xp - 15, g.yP - 9, 30, 21, 4); ctx.fill();
+  ctx.fillStyle = C.sky; ctx.font = `600 ${Math.min(10.5, fs - 1)}px ${SANS}`; ctx.textAlign = 'center';
+  ctx.fillText('펌프', g.xp, g.yP + 5);
+}
+
+function set(id, t){ const el = document.getElementById(id); if (el) el.textContent = t; }
+function updateText(){
+  panels.forEach(p => {
+    const s = p.sol, k = p.kind;
+    set(k + '-I', s.I.toFixed(2) + ' A');
+    const lit = s.units.find(u => u.on && u.P > 0);
+    set(k + '-V', fmt(lit ? lit.V : 0) + ' V');
+    const pct = lit ? Math.round(lit.p * 100) : 0;
+    set(k + '-P', pct + '%');
+    document.getElementById(k + '-M').style.width = Math.min(100, pct) + '%';
+    set(k + '-L', s.I > 0 ? '×' + fmtRatio(s.Iref / s.I) : '지치지 않음');
+    let msg;
+    if (k === 'series'){
+      if (s.open) msg = '수문 하나가 닫혀 물길 전체가 멈췄어요. 물이 안 흐르니 물레방아가 모두 서고 불도 꺼져요.';
+      else if (s.n === 1) msg = '물레방아 1개가 높이 전체를 혼자 받아요. 개수를 늘려 보세요.';
+      else msg = `물이 한 길로 내려오며 높이 ${fmt(s.V)}을 ${s.n}번 나눠 떨어져요(한 번에 ${fmt(s.units[0].V)}). 수문 ${s.n}개를 차례로 지나서 물도 적게 흘러요.`;
+    } else {
+      if (s.m === 0) msg = '모든 수문이 닫혀 물이 흐르지 않아요.';
+      else if (s.m < s.n) msg = `수문 ${s.n - s.m}개를 닫아도 나머지 물줄기 ${s.m}개는 높이 ${fmt(s.V)}을 그대로 떨어져요.`;
+      else if (s.n === 1) msg = '물레방아 1개가 높이 전체를 혼자 받아요. 개수를 늘려 보세요.';
+      else msg = `물줄기 ${s.n}개가 각자 높이 ${fmt(s.V)}을 한 번에 떨어져요. 펌프는 물을 ${s.n}배 퍼 올려야 해요.`;
+    }
+    set(k + '-status', msg);
+  });
+  const n2 = Math.max(2, S.n), V = S.cells * VC, R = RSET[S.rk];
+  document.getElementById('n1note').hidden = S.n !== 1;
+  const fill = (cls, t) => document.querySelectorAll('.' + cls).forEach(e => e.textContent = t);
+  fill('x-V', fmt(V)); fill('x-n', n2); fill('x-Vs', fmt(V / n2)); fill('x-n2', n2 * n2); fill('x-pct', fmt(100 / (n2 * n2)));
+  set('now', `지금 설정으로 물레방아 1개만 달면: 높이 ${fmt(V)} ÷ 막는 정도 ${R} = 흐르는 물 ${fmt(V / R)}  (전기로 ${fmt(V)}V ÷ ${R}Ω = ${fmt(V / R)}A)`);
+  drawChart();
+}
+
+function drawChart(){
+  const svg = document.getElementById('chart');
+  const x0 = 40, y0 = 145, h = 105, gw = 68, bw = 20;
+  let s = `<line class="axis" x1="${x0}" y1="${y0}" x2="312" y2="${y0}"/>`;
+  [0, 50, 100].forEach(v => { const y = y0 - h * v / 100; s += `<line class="axis" x1="${x0}" y1="${y}" x2="312" y2="${y}"${v ? ' stroke-dasharray="2 3"' : ''}/><text x="${x0 - 6}" y="${y + 4}" text-anchor="end">${v}%</text>`; });
+  for (let k = 1; k <= 4; k++){
+    const gx = x0 + 14 + (k - 1) * gw, dim = k === S.n ? '' : 'dim';
+    const vs = 100 / (k * k), hs = h * vs / 100;
+    s += `<g class="${dim}"><rect class="bs" x="${gx}" y="${y0 - hs}" width="${bw}" height="${hs}" rx="2"/>`;
+    s += `<rect class="bp" x="${gx + bw + 4}" y="${y0 - h}" width="${bw}" height="${h}" rx="2"/>`;
+    s += `<text class="val" x="${gx + bw / 2}" y="${y0 - hs - 4}" text-anchor="middle">${Math.round(vs)}</text>`;
+    s += `<text class="val" x="${gx + bw * 1.5 + 4}" y="${y0 - h - 4}" text-anchor="middle">100</text></g>`;
+    s += `<text x="${gx + bw + 2}" y="${y0 + 17}" text-anchor="middle">${k}개</text>`;
+  }
+  s += `<rect class="bs" x="${x0 + 14}" y="6" width="10" height="10" rx="2"/><text x="${x0 + 28}" y="15">직렬</text>`;
+  s += `<rect class="bp" x="${x0 + 70}" y="6" width="10" height="10" rx="2"/><text x="${x0 + 84}" y="15">병렬</text>`;
+  svg.innerHTML = s;
+}
+
+function refresh(){ panels.forEach(rebuild); updateText(); }
+document.querySelectorAll('input[name="n"]').forEach(el => el.addEventListener('change', () => { S.n = +el.value; S.removed.series.clear(); S.removed.parallel.clear(); refresh(); }));
+document.querySelectorAll('input[name="cells"]').forEach(el => el.addEventListener('change', () => { S.cells = +el.value; refresh(); }));
+document.querySelectorAll('input[name="rk"]').forEach(el => el.addEventListener('change', () => { S.rk = +el.value; refresh(); }));
+const pauseBtn = document.getElementById('pause');
+const syncPause = () => pauseBtn.textContent = S.paused ? '재생' : '멈춤';
+pauseBtn.addEventListener('click', () => { S.paused = !S.paused; syncPause(); });
+document.getElementById('reset').addEventListener('click', () => { S.removed.series.clear(); S.removed.parallel.clear(); refresh(); });
+syncPause();
+
+function hit(p, e){
+  if (!p.g) return -1;
+  const r = p.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, g = p.g;
+  return g.units.findIndex(u => {
+    const gx = p.kind === 'series' ? u.x - 10 : u.x, gy = p.kind === 'series' ? u.yA - 6 : g.yTop + 12;
+    return Math.hypot(u.cx - x, u.cy - y) < g.r * 1.5 || Math.hypot(u.cx - x, u.ly - y) < g.r || Math.hypot(gx - x, gy - y) < 16;
+  });
+}
+panels.forEach(p => {
+  p.cv.addEventListener('pointerdown', e => {
+    const i = hit(p, e); if (i < 0) return;
+    const rm = S.removed[p.kind]; rm.has(i) ? rm.delete(i) : rm.add(i);
+    rebuild(p); updateText();
+  });
+  p.cv.addEventListener('pointermove', e => { p.cv.style.cursor = hit(p, e) >= 0 ? 'pointer' : 'default'; });
+});
+
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+const ro = new ResizeObserver(() => panels.forEach(size));
+panels.forEach(p => ro.observe(p.cv));
+panels.forEach(size);
+updateText();
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  panels.forEach(p => draw(p, dt));
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
