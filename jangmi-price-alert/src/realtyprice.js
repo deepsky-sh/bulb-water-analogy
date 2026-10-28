@@ -43,6 +43,7 @@ async function post(path, params, referer, as = "json") {
   if (!res.ok) throw new UpstreamError(`공시가격 사이트가 HTTP ${res.status}로 응답했습니다.`);
 
   const text = await res.text();
+  if (process.env.JANGMI_DEBUG) console.log(`[debug] ${path} ${body.slice(0, 200)} -> HTTP ${res.status} ${res.headers.get("content-type")}\n${text.slice(0, 3000)}`);
   let value = text;
   if (as === "json") {
     try {

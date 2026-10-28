@@ -27,6 +27,7 @@ jobs:
         id: run
         run: node jangmi-price-alert/scripts/github-check.js check || echo "failed=1" >> "$GITHUB_OUTPUT"
         env:
+          JANGMI_DEBUG: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
