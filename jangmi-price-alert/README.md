@@ -34,7 +34,26 @@ docker build -t jangmi-price-alert .
 docker run -d -p 3000:3000 --env-file .env -v $(pwd)/data:/app/data jangmi-price-alert
 ```
 
-## 설정 (.env)
+## 서버 없이 GitHub로 운영하기 (현재 운영 방식)
+
+**사이트 주소: https://deepsky-sh.github.io/bulb-water-analogy/jangmi/**
+
+서버를 띄우지 않고 GitHub Pages와 GitHub Actions만으로 돌아가는 방식입니다.
+
+- `jangmi/` — 웹 화면(GitHub Pages). `watch.json`(알림 세대·ntfy 토픽)과 `data/prices.json`(조회 결과)을 읽어 보여줍니다.
+- `.github/workflows/jangmi-gongsi-check.yml` — 매일 한국 시간 09:13·18:13에 `scripts/github-check.js check`를 실행해 공시가격을 확인하고, 새 공시가 있으면 알림을 보낸 뒤 결과를 커밋합니다. Actions 탭에서 수동 실행도 됩니다.
+- `.github/workflows/jangmi-gongsi-request.yml` — 웹 화면의 **등록 요청/해지 요청** 버튼이 만드는 `[공시가격 알림]` 이슈를 받아 `watch.json`을 고치고 결과를 댓글로 단 뒤 이슈를 닫습니다. 저장소 소유자·협업자의 요청만 처리합니다.
+- 알림은 기본으로 `watch.json`의 ntfy 토픽으로 갑니다. 이메일·텔레그램도 받으려면 저장소 **Settings → Secrets and variables → Actions**에 아래 값을 추가하세요.
+
+| Secret | 설명 |
+|---|---|
+| `NOTIFY_EMAIL` | 받을 이메일 주소 |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | 보내는 메일 서버 (예: `smtp.naver.com`, `465`) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | 텔레그램 봇 토큰과 받을 chat ID |
+
+GitHub Actions 서버는 해외에 있어 realtyprice.kr이 접속을 막으면 확인이 실패합니다. 실패하면 Actions 실행이 빨간색으로 표시되고(GitHub가 메일로 알려줌), 사이트 상단에 오류가 표시됩니다. 그 경우 위의 서버 버전을 국내 PC·서버에서 운영하세요.
+
+## 서버 버전 설정 (.env)
 
 | 항목 | 설명 |
 |---|---|
@@ -58,6 +77,7 @@ docker run -d -p 3000:3000 --env-file .env -v $(pwd)/data:/app/data jangmi-price
 ## 구조
 
 ```
+scripts/github-check.js  GitHub Actions용 확인 스크립트
 src/server.js       HTTP 서버와 API
 src/realtyprice.js  공시가격 사이트 조회
 src/checker.js      주기 확인, 새 공시 감지, 일정 알림

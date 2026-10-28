@@ -1,7 +1,7 @@
 // 개발·테스트용 가짜 데이터. REALTYPRICE_MOCK=1 이면 realtyprice.js 대신 쓰인다.
 // 가격은 실제 공시가격이 아니다.
 
-const state = { latestYear: 2026 };
+const state = { latestYear: Number(process.env.MOCK_LATEST_YEAR) || 2026 };
 
 const complexes = [
   { aptCode: "M0001", name: "장미1차", roadAddress: "서울특별시 송파구 올림픽로35길 104", landAddress: "서울특별시 송파구 신천동 7", base: 1_050_000_000 },

@@ -18,4 +18,4 @@
 
 ## 같은 저장소의 다른 프로젝트
 
-- [`jangmi-price-alert/`](jangmi-price-alert/) — 잠실 장미아파트 공동주택 공시가격 조회 및 자동 알림 웹사이트 (Node.js 서버)
+- [잠실 장미아파트 공시가격 알림](https://deepsky-sh.github.io/bulb-water-analogy/jangmi/) — 공동주택 공시가격 확인 및 자동 알림 (코드: [`jangmi/`](jangmi/), [`jangmi-price-alert/`](jangmi-price-alert/))
