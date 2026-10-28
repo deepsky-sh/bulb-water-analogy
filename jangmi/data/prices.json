@@ -1,8 +1,33 @@
 {
-  "status": "error",
-  "error": "송파구 \"장미\" 단지 검색 결과가 비어 있습니다.",
-  "complexes": [],
+  "status": "ok",
+  "error": null,
+  "complexes": [
+    {
+      "name": "장미1차",
+      "officialName": "장미아파트(장미1)",
+      "aptCode": "2369",
+      "noticeDate": "20260626",
+      "roadAddress": "서울특별시 송파구 올림픽로35길 104",
+      "landAddress": "서울특별시 송파구 신천동 7"
+    },
+    {
+      "name": "장미2차",
+      "officialName": "장미아파트(장미2)",
+      "aptCode": "50192",
+      "noticeDate": "20260626",
+      "roadAddress": "서울특별시 송파구 올림픽로35길 104",
+      "landAddress": "서울특별시 송파구 신천동 11"
+    },
+    {
+      "name": "장미3차",
+      "officialName": "장미3차맨션(장미3)",
+      "aptCode": "2370",
+      "noticeDate": "20260626",
+      "roadAddress": "서울특별시 송파구 올림픽로35길 94",
+      "landAddress": "서울특별시 송파구 신천동 11"
+    }
+  ],
   "units": [],
   "remindersSent": [],
-  "updatedAt": "2026-10-28T03:06:56.035Z"
+  "updatedAt": "2026-10-28T03:13:14.045Z"
 }
