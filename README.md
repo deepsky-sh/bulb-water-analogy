@@ -13,3 +13,9 @@
 | 물레방아의 힘 | 전구 밝기 |
 
 설치할 것은 없고 `index.html` 하나로 동작합니다.
+
+---
+
+## 같은 저장소의 다른 프로젝트
+
+- [잠실 장미아파트 공시가격 알림](https://deepsky-sh.github.io/bulb-water-analogy/jangmi/) — 공동주택 공시가격 확인 및 자동 알림 (코드: [`jangmi/`](jangmi/), [`jangmi-price-alert/`](jangmi-price-alert/))

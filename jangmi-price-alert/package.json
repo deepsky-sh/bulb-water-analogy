@@ -1,0 +1,19 @@
+{
+  "name": "jangmi-price-alert",
+  "version": "1.0.0",
+  "private": true,
+  "description": "잠실 장미아파트 공동주택 공시가격 조회·자동 알림 웹사이트",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "REALTYPRICE_MOCK=1 node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  },
+  "license": "MIT"
+}

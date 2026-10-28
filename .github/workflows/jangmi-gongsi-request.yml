@@ -1,0 +1,63 @@
+name: 장미아파트 공시가격 알림 세대 등록
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: jangmi-gongsi
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: startsWith(github.event.issue.title, '[공시가격 알림]')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      AUTHORIZED: ${{ contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association) }}
+    steps:
+      - name: 권한 없는 요청 거절
+        if: env.AUTHORIZED != 'true'
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "저장소 소유자·협업자의 요청만 처리합니다."
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason "not planned"
+      - uses: actions/checkout@v4
+        if: env.AUTHORIZED == 'true'
+      - uses: actions/setup-node@v4
+        if: env.AUTHORIZED == 'true'
+        with:
+          node-version: 22
+      - name: 세대 등록·해지
+        if: env.AUTHORIZED == 'true'
+        run: node jangmi-price-alert/scripts/github-check.js request || true
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          RESULT_FILE: ${{ runner.temp }}/result.md
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: 저장하고 결과 답변
+        if: env.AUTHORIZED == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jangmi
+          if ! git diff --cached --quiet; then
+            git commit -m "장미아파트 공시가격 알림 세대 변경 (#${ISSUE_NUMBER})"
+            git pull --rebase origin "${{ github.event.repository.default_branch }}"
+            git push origin "HEAD:${{ github.event.repository.default_branch }}"
+          fi
+          RESULT="${RUNNER_TEMP}/result.md"
+          [ -s "$RESULT" ] || echo "처리 중 오류가 났습니다. Actions 실행 기록을 확인하세요." > "$RESULT"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RESULT"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"

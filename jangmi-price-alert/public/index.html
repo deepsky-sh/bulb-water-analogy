@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>장미아파트 공시가격 알림</title>
+  <meta name="description" content="서울 송파구 잠실 장미아파트(장미1·2·3차) 공동주택 공시가격을 조회하고, 새 공시가격이 발표되면 자동으로 알림을 받습니다.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23c2185b'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white'%3E%E2%82%A9%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">서울 송파구 신천동 · 장미1·2·3차</p>
+      <h1>잠실 장미아파트 공시가격 알림</h1>
+      <p class="lead">우리 집 공동주택 공시가격을 조회하고, 매년 새 공시가격이 발표되면 이메일·텔레그램·휴대폰 푸시로 바로 받아보세요.</p>
+      <p class="status" id="status">서버 상태 확인 중…</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="notice mock" id="mockBanner" hidden>모의 데이터 모드입니다. 화면의 가격은 실제 공시가격이 아닙니다.</div>
+
+    <!-- 관리 화면 -->
+    <section class="card" id="manageCard" hidden>
+      <div class="card-head">
+        <h2>알림 관리</h2>
+        <a href="./" class="link">새 알림 등록</a>
+      </div>
+      <div id="manageBody"></div>
+    </section>
+
+    <!-- 1. 세대 선택 -->
+    <section class="card" id="unitCard">
+      <div class="card-head">
+        <h2><span class="step">1</span>세대 선택</h2>
+      </div>
+      <form class="search" id="searchForm">
+        <label for="searchInput" class="sr-only">단지명</label>
+        <input id="searchInput" type="search" placeholder="단지명 (예: 장미)" autocomplete="off">
+        <button type="submit" class="btn secondary">단지 검색</button>
+      </form>
+      <div class="complexes" id="complexes" role="radiogroup" aria-label="단지"></div>
+      <div class="selects">
+        <label>동
+          <select id="dongSelect" disabled><option value="">단지를 먼저 고르세요</option></select>
+        </label>
+        <label>호
+          <select id="hoSelect" disabled><option value="">동을 먼저 고르세요</option></select>
+        </label>
+      </div>
+      <div id="historyBox" class="history" hidden></div>
+    </section>
+
+    <!-- 2~3. 알림 설정 -->
+    <form class="card" id="subForm" novalidate>
+      <div class="card-head">
+        <h2><span class="step">2</span>알림 받을 방법</h2>
+      </div>
+      <div id="channelFields"></div>
+
+      <div class="card-head">
+        <h2><span class="step">3</span>알림 조건</h2>
+      </div>
+      <div id="optionFields"></div>
+
+      <div class="actions">
+        <button type="submit" class="btn primary" id="submitBtn" disabled>알림 등록</button>
+        <span class="hint" id="submitHint">세대를 먼저 선택하세요.</span>
+      </div>
+      <div id="formResult"></div>
+    </form>
+
+    <!-- 내 알림 -->
+    <section class="card" id="myCard" hidden>
+      <div class="card-head"><h2>이 브라우저에서 등록한 알림</h2></div>
+      <ul class="mylist" id="myList"></ul>
+    </section>
+
+    <section class="card faq">
+      <h2>안내</h2>
+      <details>
+        <summary>공시가격은 언제 발표되나요?</summary>
+        <p>공동주택 공시가격은 매년 1월 1일 기준으로 산정되어, 3월 중순에 공시가격(안)이 공개되고(약 3주간 의견 청취), 4월 말에 결정·공시됩니다(약 한 달간 이의신청). 이 사이트는 결정·공시된 가격이 부동산공시가격알리미에 올라오면 알림을 보냅니다.</p>
+      </details>
+      <details>
+        <summary>데이터는 어디서 가져오나요?</summary>
+        <p>국토교통부·한국부동산원이 운영하는 <a href="https://www.realtyprice.kr" target="_blank" rel="noopener">부동산공시가격알리미</a>의 공동주택 공시가격 열람 화면과 같은 데이터를 조회합니다. 공시가격은 세금 산정 기준이 되는 정부 공시가격이며 시세나 실거래가가 아닙니다.</p>
+      </details>
+      <details>
+        <summary>ntfy 휴대폰 푸시는 어떻게 받나요?</summary>
+        <p>휴대폰에 <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a> 앱(안드로이드·iOS, 무료, 가입 불필요)을 설치하고, 이 화면에 적힌 토픽 이름을 구독하면 됩니다. 토픽 이름을 아는 사람은 누구나 같은 알림을 볼 수 있으니 추측하기 어려운 이름을 쓰세요.</p>
+      </details>
+      <details>
+        <summary>텔레그램 chat ID는 어떻게 아나요?</summary>
+        <p>이 사이트의 텔레그램 봇에게 아무 메시지나 보낸 뒤, <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>에게 말을 걸면 내 숫자 ID를 알려줍니다. 봇에게 먼저 말을 걸어야 봇이 메시지를 보낼 수 있습니다.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    출처: 부동산공시가격알리미(realtyprice.kr). 이 사이트는 정부 기관과 무관하며, 표시 내용은 참고용입니다.
+  </footer>
+
+  <template id="channelTpl">
+    <div class="field" data-channel="email">
+      <label class="check"><input type="checkbox" data-toggle> 이메일</label>
+      <input type="email" name="email" placeholder="you@example.com" autocomplete="email">
+      <p class="hint" data-off hidden>이 서버는 이메일 발송이 설정되지 않았습니다.</p>
+    </div>
+    <div class="field" data-channel="ntfy">
+      <label class="check"><input type="checkbox" data-toggle> 휴대폰 푸시 (ntfy 앱)</label>
+      <div class="row">
+        <input type="text" name="ntfyTopic" placeholder="토픽 이름" spellcheck="false" autocomplete="off">
+        <button type="button" class="btn secondary small" data-regen>새 이름</button>
+      </div>
+      <p class="hint">ntfy 앱에서 <b data-server></b> 서버의 이 토픽을 구독하세요.</p>
+    </div>
+    <div class="field" data-channel="telegram">
+      <label class="check"><input type="checkbox" data-toggle> 텔레그램</label>
+      <input type="text" name="telegramChatId" inputmode="numeric" placeholder="chat ID (숫자)">
+      <p class="hint" data-on>먼저 <a data-bot target="_blank" rel="noopener">봇</a>에게 아무 메시지나 보내 주세요.</p>
+      <p class="hint" data-off hidden>이 서버는 텔레그램 발송이 설정되지 않았습니다.</p>
+    </div>
+    <div class="field" data-channel="webhook">
+      <label class="check"><input type="checkbox" data-toggle> 웹훅 (디스코드·슬랙 등)</label>
+      <input type="url" name="webhookUrl" placeholder="https://discord.com/api/webhooks/…">
+    </div>
+  </template>
+
+  <template id="optionTpl">
+    <div class="field">
+      <label class="check"><input type="checkbox" name="notifyNewNotice" checked> 새 공시가격이 발표되면 알림</label>
+      <label class="inline">전년 대비 변동률이
+        <input type="number" name="minChangePct" min="0" max="100" step="0.5" value="0"> % 이상일 때만
+      </label>
+      <p class="hint">0이면 변동 폭과 관계없이 항상 알립니다.</p>
+    </div>
+    <div class="field">
+      <label class="check"><input type="checkbox" name="scheduleReminders" checked> 공시 일정 미리 알림</label>
+      <ul class="hint reminders" data-reminders></ul>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

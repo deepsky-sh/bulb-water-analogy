@@ -1,0 +1,52 @@
+name: 장미아파트 공시가격 확인
+
+on:
+  schedule:
+    - cron: "13 0,9 * * *" # 한국 시간 09:13, 18:13
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [jangmi/watch.json]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jangmi-gongsi
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 공시가격 확인
+        id: run
+        run: node jangmi-price-alert/scripts/github-check.js check || echo "failed=1" >> "$GITHUB_OUTPUT"
+        env:
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: 데이터 저장
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jangmi
+          if ! git diff --cached --quiet; then
+            git commit -m "장미아파트 공시가격 데이터 갱신"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push
+          fi
+      - name: 조회 실패 알림
+        if: steps.run.outputs.failed == '1'
+        run: |
+          echo "::error::공시가격 사이트 조회에 실패했습니다. 위 '공시가격 확인' 단계 로그를 확인하세요."
+          exit 1
