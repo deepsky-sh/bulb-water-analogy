@@ -1,8 +1,8 @@
 {
-  "status": "pending",
-  "error": null,
+  "status": "error",
+  "error": "송파구 \"장미\" 단지 검색 결과가 비어 있습니다.",
   "complexes": [],
   "units": [],
   "remindersSent": [],
-  "updatedAt": null
+  "updatedAt": "2026-10-28T03:06:56.035Z"
 }
