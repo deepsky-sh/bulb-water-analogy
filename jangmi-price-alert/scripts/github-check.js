@@ -13,12 +13,11 @@ const path = require("node:path");
 const { loadConfig } = require("../src/config");
 const { createNotifier } = require("../src/notifier");
 const { won, seoulToday } = require("../src/checker");
+const { findComplexes, sameName, display } = require("../src/jangmi");
 
 const DIR = path.resolve(process.env.JANGMI_DIR || path.join(__dirname, "..", "..", "jangmi"));
 const WATCH_FILE = path.join(DIR, "watch.json");
 const DATA_FILE = path.join(DIR, "data", "prices.json");
-const SEARCH = "장미";
-const REGION = "송파구";
 const MAX_UNITS = 30;
 
 const config = loadConfig();
@@ -34,7 +33,7 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-const unitId = (u) => `${u.complex}|${u.dong}|${u.ho}`;
+const unitId = (u) => `${u.complex}|${u.dong.replace(/동$/, "")}|${u.ho.replace(/호$/, "")}`;
 const unitName = (u) => `${u.complex} ${u.dong} ${u.ho}`;
 
 async function notify(watch, title, text) {
@@ -62,11 +61,11 @@ async function fetchUnit(complexes, u) {
   const complex = complexes.find((c) => c.name === u.complex);
   if (!complex) throw new Error(`단지 "${u.complex}"를 찾지 못했습니다. (${complexes.map((c) => c.name).join(", ")})`);
   const dongs = await api.listDongs(complex.aptCode, complex.noticeDate);
-  const dong = dongs.find((d) => d.name === u.dong);
-  if (!dong) throw new Error(`"${u.dong}"이 없습니다. 가능한 동: ${dongs.map((d) => d.name).join(", ")}`);
+  const dong = dongs.find((d) => sameName(d.name, u.dong));
+  if (!dong) throw new Error(`"${u.dong}"이 없습니다. 가능한 동: ${dongs.map((d) => display(d.name, "동")).join(", ")}`);
   const hos = await api.listHos(complex.aptCode, complex.noticeDate, dong.code);
-  const ho = hos.find((h) => h.name === u.ho);
-  if (!ho) throw new Error(`${u.dong}에 "${u.ho}"가 없습니다. 예: ${hos.slice(0, 8).map((h) => h.name).join(", ")} …`);
+  const ho = hos.find((h) => sameName(h.name, u.ho));
+  if (!ho) throw new Error(`${u.dong}에 "${u.ho}"가 없습니다. 예: ${hos.slice(0, 8).map((h) => display(h.name, "호")).join(", ")} …`);
   return api.priceHistory(complex.aptCode, complex.noticeDate, dong.code, ho.code);
 }
 
@@ -88,8 +87,8 @@ async function check() {
 
   let complexes;
   try {
-    complexes = (await api.searchComplexes(SEARCH)).filter((c) => `${c.roadAddress} ${c.landAddress}`.includes(REGION));
-    if (!complexes.length) throw new Error(`${REGION} "${SEARCH}" 단지 검색 결과가 비어 있습니다.`);
+    complexes = await findComplexes(api);
+    if (!complexes.length) throw new Error("송파구 장미1·2·3차 단지를 찾지 못했습니다.");
   } catch (err) {
     console.error(`::error::공시가격 사이트 조회 실패: ${err.message}`);
     next.status = "error";
@@ -104,7 +103,7 @@ async function check() {
     const before = prev.complexes.find((p) => p.name === c.name);
     if (before && c.noticeDate.slice(0, 4) > before.noticeDate.slice(0, 4)) newNotices.push(`${c.name} ${c.noticeDate.slice(0, 4)}년`);
   }
-  next.complexes = complexes.map(({ name, aptCode, noticeDate, roadAddress, landAddress }) => ({ name, aptCode, noticeDate, roadAddress, landAddress }));
+  next.complexes = complexes.map(({ name, officialName, aptCode, noticeDate, roadAddress, landAddress }) => ({ name, officialName, aptCode, noticeDate, roadAddress, landAddress }));
 
   // 세대 단위
   next.units = [];
@@ -155,16 +154,11 @@ function save(prev, next) {
   writeJson(DATA_FILE, next);
 }
 
-function normalize(value, suffix) {
-  const v = String(value || "").replace(/\s+/g, "");
-  return /^\d+$/.test(v) ? `${v}${suffix}` : v;
-}
-
 function parseRequest(body) {
   const field = (name) => (String(body).match(new RegExp(`^\\s*${name}\\s*[:：]\\s*(.+)$`, "m")) || [])[1]?.trim() || "";
   return {
     action: field("요청").includes("삭제") || field("요청").includes("해지") ? "remove" : "add",
-    unit: { complex: field("단지").replace(/\s+/g, ""), dong: normalize(field("동"), "동"), ho: normalize(field("호"), "호") },
+    unit: { complex: field("단지").replace(/\s+/g, ""), dong: display(field("동"), "동"), ho: display(field("호"), "호") },
   };
 }
 

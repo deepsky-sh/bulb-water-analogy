@@ -5,6 +5,7 @@ const { loadConfig } = require("./config");
 const { Store } = require("./store");
 const { createNotifier, isSafeWebhookUrl } = require("./notifier");
 const { createChecker, priceMessage } = require("./checker");
+const { findComplexes } = require("./jangmi");
 
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml" };
@@ -104,6 +105,7 @@ function createApp(config, deps = {}) {
   route("GET", /^\/api\/complexes$/, async (req, url) => {
     const q = str(url.searchParams.get("q"), 50) || config.defaultSearch;
     const region = url.searchParams.has("region") ? str(url.searchParams.get("region"), 50) : config.defaultRegion;
+    if (q === config.defaultSearch && region === config.defaultRegion) return findComplexes(api);
     const list = await api.searchComplexes(q);
     return list.filter((c) => !region || `${c.roadAddress} ${c.landAddress}`.includes(region));
   });

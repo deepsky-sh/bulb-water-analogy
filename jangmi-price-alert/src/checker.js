@@ -1,6 +1,8 @@
 // 구독마다 최신 공시가격을 확인해 새 연도가 공시되면 알림을 보낸다.
 // 같은 세대를 구독한 사람이 여러 명이어도 공시가격 사이트에는 한 번만 묻는다.
 
+const { sameName, findComplexes } = require("./jangmi");
+
 function seoulToday() {
   // "YYYY-MM-DD" (Asia/Seoul)
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
@@ -25,18 +27,18 @@ function unitKey(sub) {
 
 // 해마다 공시 기준일(notice_date)이 바뀌어 코드가 달라질 수 있으므로 이름으로 다시 찾는다.
 async function resolveHistory(api, sub) {
-  const candidates = await api.searchComplexes(sub.complex.name);
+  const candidates = /^장미\d차$/.test(sub.complex.name) ? await findComplexes(api) : await api.searchComplexes(sub.complex.name);
   const complex =
     candidates.find((c) => c.aptCode === sub.complex.aptCode) ||
     candidates.find((c) => c.name === sub.complex.name && c.landAddress === sub.complex.landAddress);
   if (!complex) throw new Error(`단지를 찾지 못했습니다: ${sub.complex.name}`);
 
   const dongs = await api.listDongs(complex.aptCode, complex.noticeDate);
-  const dong = dongs.find((d) => d.name === sub.unit.dongName);
+  const dong = dongs.find((d) => sameName(d.name, sub.unit.dongName));
   if (!dong) throw new Error(`동을 찾지 못했습니다: ${sub.unit.dongName}`);
 
   const hos = await api.listHos(complex.aptCode, complex.noticeDate, dong.code);
-  const ho = hos.find((h) => h.name === sub.unit.hoName);
+  const ho = hos.find((h) => sameName(h.name, sub.unit.hoName));
   if (!ho) throw new Error(`호를 찾지 못했습니다: ${sub.unit.hoName}`);
 
   return api.priceHistory(complex.aptCode, complex.noticeDate, dong.code, ho.code);

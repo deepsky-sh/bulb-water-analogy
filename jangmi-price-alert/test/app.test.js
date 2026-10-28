@@ -133,3 +133,24 @@ test("웹훅 주소 검사", () => {
   assert.ok(!isSafeWebhookUrl("https://192.168.0.10/x"));
   assert.ok(!isSafeWebhookUrl("https://[::1]/x"));
 });
+
+test("공시가격 사이트 표기 정규화", async () => {
+  const { label, sameName, display, findComplexes } = require("../src/jangmi");
+  assert.strictEqual(label("장미아파트(장미1)"), "장미1차");
+  assert.strictEqual(label("장미3차맨션(장미3)"), "장미3차");
+  assert.ok(sameName("22", "22동"));
+  assert.ok(sameName("1동", "1"));
+  assert.ok(sameName("101", "101호"));
+  assert.strictEqual(display("22", "동"), "22동");
+  const fake = {
+    async searchComplexes(q) {
+      return [
+        { aptCode: "9", name: "장미아파트(장미1)", roadAddress: "서울특별시 용산구", landAddress: "서울특별시 용산구 한남동" },
+        { aptCode: "2369", name: "장미아파트(장미1)", roadAddress: "서울특별시 송파구 올림픽로35길 104", landAddress: "서울특별시 송파구 신천동 7" },
+        { aptCode: "2370", name: "장미3차맨션(장미3)", roadAddress: "서울특별시 송파구 올림픽로35길 94", landAddress: "서울특별시 송파구 신천동 11" },
+      ].filter((c) => c.name.includes(q.slice(-1)));
+    },
+  };
+  const found = await findComplexes(fake);
+  assert.deepStrictEqual(found.map((c) => [c.name, c.aptCode]), [["장미1차", "2369"], ["장미3차", "2370"]]);
+});
