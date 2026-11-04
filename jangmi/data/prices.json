@@ -1,6 +1,6 @@
 {
-  "status": "ok",
-  "error": null,
+  "status": "error",
+  "error": "공시가격 사이트에 연결하지 못했습니다: fetch failed",
   "complexes": [
     {
       "name": "장미1차",
@@ -29,5 +29,5 @@
   ],
   "units": [],
   "remindersSent": [],
-  "updatedAt": "2026-10-28T03:23:40.392Z"
+  "updatedAt": "2026-11-04T06:24:20.611Z"
 }
